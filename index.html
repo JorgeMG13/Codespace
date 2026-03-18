@@ -133,7 +133,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--t1);font
 
 /* tab content */
 #tabcontent{flex:1;position:relative;overflow:hidden;}
-.pane{position:absolute;inset:0;display:none;flex-direction:column;}
+.pane{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;}
 .pane.on{display:flex;}
 
 /* new tab menu */
@@ -784,8 +784,11 @@ function buildEdPane(id,fn){
   if(f.lang==='image'){
     pane.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg0)"><img src="${f.content}" style="max-width:90%;max-height:75%;object-fit:contain;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5)"><span style="font-family:var(--mono);font-size:11px;color:var(--t3)">${fn}</span></div>`;
   }else{
-    const d=document.createElement('div');d.id='ed-'+id;d.style.cssText='flex:1;overflow:hidden';
-    pane.appendChild(d);
+    const d=document.createElement('div');d.id='ed-'+id;d.style.cssText='position:absolute;inset:0;';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='flex:1;position:relative;overflow:hidden;min-height:0;';
+    wrap.appendChild(d);
+    pane.appendChild(wrap);
     requestAnimationFrame(()=>{
       if(!mrReady){pendingME.push({id,fn,el:d});return;}
       initME(id,fn,d);
