@@ -424,6 +424,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--t1);font
 </div></div>
 
 <script>
+document.addEventListener("DOMContentLoaded", function() {
 // ── UTILS ──────────────────────────────────────────────────
 function Q(s){return document.querySelector(s);}
 function QI(id){return document.getElementById(id);}
@@ -431,10 +432,10 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ── STORAGE ────────────────────────────────────────────────
 const DB={
-  async getUsers(){try{const r=await window.storage.get('cs_users');return r?JSON.parse(r.value):{};}catch{return{};}},
-  async setUsers(u){try{await window.storage.set('cs_users',JSON.stringify(u));}catch{}},
-  async getProjs(uid){try{const r=await window.storage.get('cs_p_'+uid);return r?JSON.parse(r.value):[];}catch{return[];}},
-  async setProjs(uid,p){try{await window.storage.set('cs_p_'+uid,JSON.stringify(p));}catch{}}
+  getUsers(){const r=localStorage.getItem('cs_users');return r?JSON.parse(r):{};},
+  setUsers(u){localStorage.setItem('cs_users',JSON.stringify(u));},
+  getProjs(uid){const r=localStorage.getItem('cs_p_'+uid);return r?JSON.parse(r):[];},
+  setProjs(uid,p){localStorage.setItem('cs_p_'+uid,JSON.stringify(p));}
 };
 
 // ── STATE ──────────────────────────────────────────────────
@@ -491,35 +492,35 @@ function switchSeg(t){
 }
 function authErr(m){const e=QI('auth-err');e.textContent=m;e.classList.add('on');}
 
-async function doLogin(){
+function doLogin(){
   const email=QI('l-email').value.trim(),pass=QI('l-pass').value;
   if(!email||!pass)return authErr('Fill all fields.');
   const btn=QI('l-btn');btn.disabled=true;btn.textContent='Signing in…';
-  const users=await DB.getUsers(),u=Object.values(users).find(x=>x.email===email);
-  if(!u||u.password!==btoa(pass)){btn.disabled=false;btn.textContent='Sign in →';return authErr('Invalid credentials.');}
+  const users=DB.getUsers(),u=Object.values(users).find(x=>x.email===email);
+  if(!u||u.password!==btoa(unescape(encodeURIComponent(pass)))){btn.disabled=false;btn.textContent='Sign in →';return authErr('Invalid credentials.');}
   loadDash(u);
 }
 
-async function doRegister(){
+function doRegister(){
   const un=QI('r-user').value.trim(),email=QI('r-email').value.trim(),pass=QI('r-pass').value;
   if(!un||!email||!pass)return authErr('Fill all fields.');
   if(pass.length<6)return authErr('Password must be 6+ chars.');
   const btn=QI('r-btn');btn.disabled=true;btn.textContent='Creating…';
-  const users=await DB.getUsers();
+  const users=DB.getUsers();
   if(Object.values(users).find(x=>x.email===email)){btn.disabled=false;btn.textContent='Create account →';return authErr('Email already taken.');}
   const uid='u_'+Date.now();
-  users[uid]={uid,username:un,email,password:btoa(pass)};
-  await DB.setUsers(users);
-  await DB.setProjs(uid,[mkProj('hello-world','My first project','html')]);
+  users[uid]={uid,username:un,email,password:btoa(unescape(encodeURIComponent(pass)))};
+  DB.setUsers(users);
+  DB.setProjs(uid,[mkProj('hello-world','My first project','html')]);
   btn.disabled=false;btn.textContent='Create account →';
   loadDash(users[uid]);
 }
 
-async function doLogout(){CU=null;projs=[];QI('logout-ctx').classList.remove('on');show('auth');}
+function doLogout(){CU=null;projs=[];QI('logout-ctx').classList.remove('on');show('auth');}
 
 // ── DASHBOARD ──────────────────────────────────────────────
-async function loadDash(u){
-  CU=u;projs=await DB.getProjs(u.uid);
+function loadDash(u){
+  CU=u;projs=DB.getProjs(u.uid);
   QI('nav-av').textContent=u.username[0].toUpperCase();
   QI('nav-un').textContent=u.username;
   QI('logout-email-lbl').textContent=u.email;
@@ -563,10 +564,10 @@ function mkProj(name,desc,tpl){
   return{id,name,desc,files,created:Date.now(),updated:Date.now()};
 }
 
-async function createProject(){
+function createProject(){
   const name=QI('np-name').value.trim();if(!name)return;
   const p=mkProj(name,QI('np-desc').value.trim(),QI('np-tpl').value);
-  projs.unshift(p);await DB.setProjs(CU.uid,projs);
+  projs.unshift(p);DB.setProjs(CU.uid,projs);
   closeModal('new-proj-ov');renderProjs();flash('dash-save');openProj(p.id);
 }
 
@@ -578,17 +579,17 @@ function ctxPEdit(){
   QI('ep-name').value=p.name;QI('ep-desc').value=p.desc||'';
   openModal('edit-proj-ov');setTimeout(()=>QI('ep-name').focus(),60);
 }
-async function confirmEditProj(){
+function confirmEditProj(){
   const name=QI('ep-name').value.trim();if(!name)return closeModal('edit-proj-ov');
   const p=projs.find(x=>x.id===ctxPid);
   if(p){p.name=name;p.desc=QI('ep-desc').value.trim();p.updated=Date.now();}
-  await DB.setProjs(CU.uid,projs);closeModal('edit-proj-ov');renderProjs();flash('dash-save');
+  DB.setProjs(CU.uid,projs);closeModal('edit-proj-ov');renderProjs();flash('dash-save');
 }
 function ctxPDelete(){
   QI('proj-ctx').classList.remove('on');
   const p=projs.find(x=>x.id===ctxPid);if(!p)return;
-  askConfirm('Delete project?',`Delete <strong>${esc(p.name)}</strong> and all its files? This cannot be undone.`,async()=>{
-    projs=projs.filter(x=>x.id!==ctxPid);await DB.setProjs(CU.uid,projs);renderProjs();
+  askConfirm('Delete project?',`Delete <strong>${esc(p.name)}</strong> and all its files? This cannot be undone.`,()=>{
+    projs=projs.filter(x=>x.id!==ctxPid);DB.setProjs(CU.uid,projs);renderProjs();
   });
 }
 
@@ -615,14 +616,14 @@ function openProj(id){
 function backToDash(){saveProject();show('dash');renderProjs();}
 
 // ── SAVE ───────────────────────────────────────────────────
-async function saveProject(){
+function saveProject(){
   if(!AP||!CU)return;
   tabs.filter(t=>t.type==='ed').forEach(t=>{const e=meds[t.id];if(e&&t.data.file)AP.files[t.data.file].content=e.getValue();});
   AP.updated=Date.now();
   const i=projs.findIndex(x=>x.id===AP.id);if(i>=0)projs[i]=AP;
-  await DB.setProjs(CU.uid,projs);flash('ide-save');
+  DB.setProjs(CU.uid,projs);flash('ide-save');
 }
-function autoSave(){clearTimeout(saveT);saveT=setTimeout(()=>saveProject(),2000);}
+function autoSave(){clearTimeout(saveT);saveT=setTimeout(saveProject,2000);}
 function flash(id){const e=QI(id);if(!e)return;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2500);}
 
 // ── FILES ──────────────────────────────────────────────────
@@ -1269,6 +1270,23 @@ document.addEventListener('keydown',e=>{
 ['r-pass'].forEach(id=>{const el=QI(id);if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});});
 
 // ── MONACO ────────────────────────────────────────────────
+// Expose all needed functions to window (called from HTML onclick attributes)
+const EXPOSE=['switchSeg','doLogin','doRegister','doLogout','openModal','closeModal',
+  'toggleCtx','showPCtx','ctxPOpen','ctxPEdit','confirmEditProj','ctxPDelete',
+  'runConfirm','openProj','backToDash','saveProject','runCode','formatCode',
+  'toggleSidebar','toggleNTMenu','openEdTab','openToolTab','closeTab','activateTab',
+  'showFCtx','ctxFRename','confirmRenameFile','ctxFDuplicate','ctxFDownload','ctxFDelete',
+  'createFile','uploadFiles','createProject',
+  'addTodo','toggleTodo','delTodo','renderTodos',
+  'updateColor','colorHex','cpCopy',
+  'runRx','fmtJSON','minJSON','valJSON',
+  'b6Enc','b6Dec','b6Copy','renderMD',
+  'timerToggle','timerReset','timerSetCd','timerLap',
+  'doSearch','renderDiff','renderPreview','jumpTo',
+  'closeNTMenu','setStatus','autoSave',
+];
+EXPOSE.forEach(fn=>{ if(typeof eval(fn)==='function') window[fn]=eval(fn); });
+
 require.config({paths:{vs:'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs'}});
 require(['vs/editor/editor.main'],function(){
   monaco.editor.defineTheme('cs',{
@@ -1290,6 +1308,7 @@ require(['vs/editor/editor.main'],function(){
   pendingME.forEach(({id,fn,el})=>{if(AP?.files[fn])initME(id,fn,el);});
   pendingME=[];
 });
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
