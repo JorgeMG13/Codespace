@@ -252,6 +252,69 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--t1);font
 .md-prev blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--t3);margin-bottom:10px;}
 .rx-match{background:rgba(249,115,22,.25);border-radius:3px;color:var(--accent);}
 *{scrollbar-width:thin;scrollbar-color:var(--bg4) transparent;}
+
+@media(max-width:768px){
+  /* ── AUTH ── */
+  .card{width:calc(100vw - 32px);padding:24px;}
+  .auth-grid{display:none;}
+
+  /* ── DASHBOARD ── */
+  .dash-nav{padding:0 12px;}
+  .dash-body{padding:16px 12px;}
+  .greet h1{font-size:20px;}
+  .pgrid{grid-template-columns:1fr;}
+  .nav-r .sbadge{display:none;}
+
+  /* ── IDE TOPBAR ── */
+  #topbar{padding:0 6px;gap:4px;}
+  .ppill{display:none;}
+  .tb-logo div:last-child{display:none;}
+  #ide-save{display:none;}
+  .btn{padding:4px 8px;font-size:11px;}
+
+  /* ── IDE BODY: sidebar hidden by default on mobile ── */
+  #ide-body{position:relative;}
+  #sidebar{
+    position:absolute;left:0;top:0;bottom:0;z-index:50;
+    width:220px!important;
+    transform:translateX(-100%);
+    transition:transform .2s;
+    box-shadow:4px 0 20px rgba(0,0,0,.6);
+  }
+  #sidebar.open{transform:translateX(0);}
+  #sidebar.closed{transform:translateX(-100%)!important;width:220px!important;}
+  #sbtoggle{
+    position:absolute;left:0;top:50%;transform:translateY(-50%);
+    z-index:51;width:20px;height:44px;border-radius:0 6px 6px 0;
+    background:var(--bg3);border:1px solid var(--border2);border-left:none;
+    writing-mode:horizontal-tb;font-size:14px;
+  }
+  #tabarea{width:100%;}
+
+  /* ── TABBAR ── */
+  #tabbar{overflow-x:auto;}
+  .tab{min-width:90px;max-width:130px;padding:0 8px;font-size:11px;}
+
+  /* ── NEW TAB MENU: full width overlay ── */
+  #ntmenu{
+    width:calc(100vw - 24px)!important;
+    left:12px!important;
+    max-height:70vh;
+    overflow-y:auto;
+  }
+  .ntm-grid{grid-template-columns:1fr 1fr;}
+
+  /* ── TOOL PANES ── */
+  .tbar{flex-wrap:wrap;gap:4px;padding:6px 8px;}
+  .tbtn{padding:5px 8px;font-size:11px;}
+  .tinp{font-size:12px;}
+  .timer-disp{font-size:32px;}
+  .diff-tb{flex-wrap:wrap;gap:4px;}
+
+  /* ── STATUSBAR ── */
+  #statusbar{padding:0 8px;gap:8px;}
+  #st-cur{display:none;}
+}
 </style>
 </head>
 <body>
@@ -813,7 +876,17 @@ function uploadFiles(inp){
 }
 
 // ── SIDEBAR ────────────────────────────────────────────────
-function toggleSidebar(){sidebarOpen=!sidebarOpen;QI('sidebar').classList.toggle('closed',!sidebarOpen);}
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  const sb=QI('sidebar');
+  if(window.innerWidth<=768){
+    // Mobile: slide in/out as overlay
+    sb.classList.toggle('open',sidebarOpen);
+    sb.classList.toggle('closed',!sidebarOpen);
+  } else {
+    sb.classList.toggle('closed',!sidebarOpen);
+  }
+}
 
 // ── TABS ───────────────────────────────────────────────────
 const TOOLS=[
